@@ -92,6 +92,7 @@ s0 = [("X", 3)]
 -------------
 -- Parte 2 --
 -------------
+-- Lectura por fichero --
 leerEstado::String -> Estado
 leerEstado = read
 
@@ -112,15 +113,15 @@ leerAsig::String -> Instruccion
 leerAsig = read
 
 leerWhile::String -> Handle -> IO Instruccion
-leerWhile line h = do 
-    let cond = leerBoolExpr $ unwords $ tail $ words line
+leerWhile line h = do
+    let cond = leerBoolExpr $ unwords $ tail $ words line --Quitar la palabra "While"
     _ <- hGetLine h     -- Saltamos la línea que abre corchete
     prog <- leerProgramaAux h []
     return $ While cond prog
 
 leerCond::String -> Handle -> IO Instruccion
-leerCond line h = do 
-    let cond = leerBoolExpr $ unwords $ tail $ words line
+leerCond line h = do
+    let cond = leerBoolExpr $ unwords $ tail $ words line --Quitar la palabra "Cond"
     _ <- hGetLine h     -- Saltamos la línea que abre corchete
     prog1 <- leerProgramaAux h []
     _ <- hGetLine h     -- Saltamos la línea que abre corchete
@@ -167,15 +168,37 @@ leerProgramaAux h p = do
 leerPrograma::Handle -> IO Programa
 leerPrograma h = leerProgramaAux h []
 
+
+-- Ejecucción paso a paso --
+-- TODO: Hacer paso a paso correcto de WHILE y COND
+ejecutaDebug::Programa -> Estado -> IO ()
+ejecutaDebug [] s = do
+    let res = snd $ head $ dropWhile (\(x, y) -> x /= "R") s
+    print $ "Fin del programa: " ++ show res
+ejecutaDebug (x:xs) s = do
+    print $ "Linea: " ++ show x
+    let ns = ejecutaInstruccion x s
+    print $ "Estado " ++ show ns
+    _ <- getLine
+    ejecutaDebug xs ns
+
+
 main = do
     print "Introduzca el nombre del fichero del programa"
     fileName <- getLine
     handle <- openFile "factorial.inv" ReadMode
+    programa <- leerPrograma handle
+
     print "Introduzca el estado inicial (El estado es una lista de parejas en la que el primer elemento es una cadena de caracteres que representa el nombre de una variable y el segundo un entero que indica el valor de dicha variable)"
     cadenaEstadoInicial <- getLine
     let estadoInicial = leerEstado cadenaEstadoInicial
     let estadoInicial = [("X", 3)]
-    programa <- leerPrograma handle
-    print $ ejecuta programa estadoInicial
+
+    print "Desea ejecutar el modo paso a paso: (S)i / (N)o"
+    modoDebug <- getLine
+    if modoDebug == "S" then
+        ejecutaDebug programa estadoInicial
+    else
+        print $ ejecuta programa estadoInicial
 
     hClose handle
