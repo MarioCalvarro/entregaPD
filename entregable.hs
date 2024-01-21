@@ -174,11 +174,43 @@ leerPrograma h = leerProgramaAux h []
 ejecutaDebug::Programa -> Estado -> IO ()
 ejecutaDebug [] s = do
     let res = snd $ head $ dropWhile (\(x, y) -> x /= "R") s
-    print $ "Fin del programa: " ++ show res
+    print $ "Estado " ++ show s
+
+ejecutaDebug ((Cond b p1 p2):xs) s = do
+    print $ "Linea: " ++ show (Cond b p1 p2)
+    print $ "Estado " ++ show s
+    _ <- getLine
+    if evalBool b s then do --La condición es verdadera -> Primer programa
+        ejecutaDebug p1 s
+        let ns = ejecutaInstruccion (Cond b p1 p2) s
+        _ <- getLine
+        ejecutaDebug xs ns
+    else do     --La condición es falsa -> Segundo programa
+        ejecutaDebug p2 s
+        let ns = ejecutaInstruccion (Cond b p1 p2) s
+        _ <- getLine
+        ejecutaDebug xs ns
+
+ejecutaDebug ((While b p):xs) s = do
+    print $ "Linea: " ++ show (While b p)
+    print $ "Estado: " ++ show s
+    _ <- getLine
+    if evalBool b s then do
+        -- Tenemos que hacerlo así porque ejecutaDebug no devuelve nada (TODO)
+        ejecutaDebug p s
+        ejecutaDebug [While b p] $ ejecutaAux p s
+        let ns = ejecutaInstruccion (While b p) s
+        _ <- getLine
+        ejecutaDebug xs ns
+    else do     --No se ejecuta el While
+        _ <- getLine
+        ejecutaDebug xs s
+
+--Asignaciones
 ejecutaDebug (x:xs) s = do
     print $ "Linea: " ++ show x
+    print $ "Estado: " ++ show s
     let ns = ejecutaInstruccion x s
-    print $ "Estado " ++ show ns
     _ <- getLine
     ejecutaDebug xs ns
 
@@ -198,6 +230,7 @@ main = do
     modoDebug <- getLine
     if modoDebug == "S" then
         ejecutaDebug programa estadoInicial
+        --print $ "Fin del programa: " 
     else
         print $ ejecuta programa estadoInicial
 
