@@ -168,50 +168,40 @@ leerProgramaAux h p = do
 leerPrograma::Handle -> IO Programa
 leerPrograma h = leerProgramaAux h []
 
-
 -- Ejecucción paso a paso --
--- TODO: Hacer paso a paso correcto de WHILE y COND
-ejecutaDebug::Programa -> Estado -> IO ()
-ejecutaDebug [] s = do
-    let res = snd $ head $ dropWhile (\(x, y) -> x /= "R") s
-    print $ "Estado " ++ show s
+ejecutaDebug::Programa -> Estado -> IO Estado
+ejecutaDebug [] s = do return s
 
+-- Condicional
 ejecutaDebug ((Cond b p1 p2):xs) s = do
-    print $ "Linea: " ++ show (Cond b p1 p2)
+    print $ "Instruccion: " ++ show (Cond b p1 p2)
     print $ "Estado " ++ show s
     _ <- getLine
     if evalBool b s then do --La condición es verdadera -> Primer programa
-        ejecutaDebug p1 s
-        let ns = ejecutaInstruccion (Cond b p1 p2) s
-        _ <- getLine
+        ns <- ejecutaDebug p1 s
         ejecutaDebug xs ns
     else do     --La condición es falsa -> Segundo programa
-        ejecutaDebug p2 s
-        let ns = ejecutaInstruccion (Cond b p1 p2) s
-        _ <- getLine
+        ns <- ejecutaDebug p2 s
         ejecutaDebug xs ns
 
+-- While bucle
 ejecutaDebug ((While b p):xs) s = do
-    print $ "Linea: " ++ show (While b p)
+    print $ "Instruccion: " ++ show (While b p)
     print $ "Estado: " ++ show s
     _ <- getLine
     if evalBool b s then do
-        -- Tenemos que hacerlo así porque ejecutaDebug no devuelve nada (TODO)
-        ejecutaDebug p s
-        ejecutaDebug [While b p] $ ejecutaAux p s
-        let ns = ejecutaInstruccion (While b p) s
-        _ <- getLine
+        ns <- ejecutaDebug p s
+        ns <- ejecutaDebug [While b p] ns
         ejecutaDebug xs ns
     else do     --No se ejecuta el While
-        _ <- getLine
         ejecutaDebug xs s
 
---Asignaciones
+-- Asignaciones
 ejecutaDebug (x:xs) s = do
-    print $ "Linea: " ++ show x
+    print $ "Instruccion: " ++ show x
     print $ "Estado: " ++ show s
-    let ns = ejecutaInstruccion x s
     _ <- getLine
+    let ns = ejecutaInstruccion x s
     ejecutaDebug xs ns
 
 
@@ -228,9 +218,10 @@ main = do
 
     print "Desea ejecutar el modo paso a paso: (S)i / (N)o"
     modoDebug <- getLine
-    if modoDebug == "S" then
-        ejecutaDebug programa estadoInicial
-        --print $ "Fin del programa: " 
+    if modoDebug == "S" || modoDebug == "s" then do
+        s <- ejecutaDebug programa estadoInicial
+        let res = snd $ head $ dropWhile (\(x, y) -> x /= "R") s
+        print $ "El resultado final es " ++ show res
     else
         print $ ejecuta programa estadoInicial
 
