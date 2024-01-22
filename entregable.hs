@@ -6,7 +6,6 @@ import System.IO
 -------------
 -- Parte 1 --
 -------------
-
 --- Código para las expresiones ---
 type Variable = [Char]
 type Estado = [(Variable, Integer)]     -- Las variables son siempre de tipo entero
@@ -223,7 +222,7 @@ ejecutaDebug (x:xs) s = do
 main = do
     print "Introduzca el nombre del fichero del programa"
     fileName <- getLine
-    handle <- openFile "factorial.inv" ReadMode
+    handle <- openFile fileName ReadMode
     programa <- leerPrograma handle
 
     print "Introduzca el estado inicial (El estado es una lista de parejas en la que el primer elemento es una cadena de caracteres que representa el nombre de una variable y el segundo, un entero que indica el valor de dicha variable)"
@@ -236,7 +235,8 @@ main = do
         s <- ejecutaDebug programa estadoInicial
         let res = snd $ head $ dropWhile (\(x, y) -> x /= "R") s
         print $ "El resultado final es " ++ show res
-    else
-        print $ ejecuta programa estadoInicial
+    else do
+        --print $ ejecuta programa estadoInicial
+        print $ "El resultado final es " ++ show (ejecuta programa estadoInicial)
 
     hClose handle
